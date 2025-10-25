@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Carbon Footprint Tracker</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>🌱 Carbon Footprint Tracker</h1>
+  </header>
+
+  <main>
+    <section class="summary">
+      <h2>Your Daily Summary</h2>
+      <div class="summary-card">
+        <p class="total">Total CO₂ Emissions: <span>12.5 kg</span></p>
+        <p class="tip">Tip: Try walking or biking for short trips!</p>
+      </div>
+    </section>
+
+    <section class="activity-form">
+      <h2>Log Your Activities</h2>
+      <form id="activityForm">
+        <div class="form-group">
+          <label for="transport">Transportation (km)</label>
+          <input type="number" id="transport" placeholder="e.g. 10">
+        </div>
+
+        <div class="form-group">
+          <label for="electricity">Electricity Use (kWh)</label>
+          <input type="number" id="electricity" placeholder="e.g. 5">
+        </div>
+
+        <div class="form-group">
+          <label for="diet">Diet Type</label>
+          <select id="diet">
+            <option value="">Select</option>
+            <option value="meat-heavy">Meat-heavy</option>
+            <option value="balanced">Balanced</option>
+            <option value="vegetarian">Vegetarian</option>
+            <option value="vegan">Vegan</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn">Calculate</button>
+      </form>
+    </section>
+  </main>
+
+  <footer>
+    <p>Made with 💚 for a cleaner planet</p>
+  </footer>
+</body>
+</html>
