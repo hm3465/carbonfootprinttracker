@@ -30,6 +30,12 @@ section {
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   padding: 1.5rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease; /* add smooth transition */
+}
+
+section:hover {
+  transform: translateY(-5px) scale(1.03); /* lift and slightly grow */
+  box-shadow: 0 10px 20px rgba(0,0,0,0.2); /* stronger shadow on hover */
 }
 
 /* Summary Card */
@@ -66,7 +72,7 @@ input, select {
 }
 
 .btn {
-  background-color: #2e7d32;
+  background-color: #2e7d58;
   color: white;
   border: none;
   padding: 0.7rem 1.5rem;
@@ -76,7 +82,7 @@ input, select {
 }
 
 .btn:hover {
-  background-color: #256628;
+  background-color: #08ab10;
 }
 
 /* Footer */

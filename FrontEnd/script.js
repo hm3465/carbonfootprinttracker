@@ -49,7 +49,7 @@ document.getElementById("activityForm").addEventListener("submit", async (event)
     document.querySelector(".tip").textContent =
       totalCO2 > 10
         ? "Tip: Try reducing car trips or meat meals!"
-        : "Great job! Keep it up 🌎";
+        : "Great job! Keep it up!";
   } catch (error) {
     console.error("Error:", error);
     alert("Failed to calculate emissions. Please try again.");
