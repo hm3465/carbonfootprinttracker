@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header>
+<header>
   <div class="nav-container">
     <h1 class="logo">Carbon Footprint Tracker</h1>
     <nav>
@@ -19,52 +19,65 @@
   </div>
 </header>
 
+<main>
+  <!-- Summary -->
+  <section class="summary" aria-live="polite">
+    <h2>Daily Summary</h2>
 
-  <main>
-    <section class="summary">
-      <h2>Your Daily Summary</h2>
-      <div class="summary-card">
-        <p class="total">Total CO₂ Emissions: <span>12.5 kg</span></p>
-        <p class="tip">Tip: Try walking or biking for short trips!</p>
+    <div class="summary-card" id="summaryCard" data-level="low">
+      <p class="total">Total CO₂ Emissions: <span id="totalSpan">12.50 kg</span></p>
+
+      <ul class="breakdown">
+        <li>Transportation: <span id="b-transport">0.00</span></li>
+        <li>Electricity: <span id="b-electricity">0.00</span></li>
+        <li>Diet: <span id="b-diet">0.00</span></li>
+      </ul>
+
+      <p class="tip" id="tipText">Tip: Try walking or biking for short trips!</p>
+      <p class="status" id="statusText" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <!-- Form -->
+  <section class="activity-form">
+    <h2>Log Your Activities</h2>
+
+    <form id="activityForm" novalidate>
+      <div class="form-group">
+        <label for="transport">Transportation (miles)</label>
+        <input type="number" id="transport" placeholder="e.g. 10" min="0" step="0.1" />
+        <small class="hint">Typical daily: 5–30</small>
       </div>
-    </section>
 
-    <section class="activity-form">
-      <h2>Log Your Activities</h2>
-      <form id="activityForm">
-        <div class="form-group">
-          <label for="transport">Transportation (m)</label>
-          <input type="number" id="transport" placeholder="e.g. 10">
-        </div>
+      <div class="form-group">
+        <label for="electricity">Electricity Use (kWh)</label>
+        <input type="number" id="electricity" placeholder="e.g. 5" min="0" step="0.1" />
+        <small class="hint">Daily household range: 2–60</small>
+      </div>
 
-        <div class="form-group">
-          <label for="electricity">Electricity Use (kWh)</label>
-          <input type="number" id="electricity" placeholder="e.g. 5">
-        </div>
+      <div class="form-group">
+        <label for="diet">Diet Type</label>
+        <select id="diet">
+          <option value="">Select</option>
+          <option value="meat-heavy">Meat-heavy</option>
+          <option value="balanced">Balanced</option>
+          <option value="vegetarian">Vegetarian</option>
+          <option value="vegan">Vegan</option>
+        </select>
+      </div>
 
-        <div class="form-group">
-          <label for="diet">Diet Type</label>
-          <select id="diet">
-            <option value="">Select</option>
-            <option value="meat-heavy">Meat-heavy</option>
-            <option value="balanced">Balanced</option>
-            <option value="vegetarian">Vegetarian</option>
-            <option value="vegan">Vegan</option>
-          </select>
-        </div>
+      <div class="form-actions">
+        <button type="submit" class="btn" id="calcBtn">Calculate</button>
+        <button type="button" class="link-reset" id="resetBtn">Reset</button>
+      </div>
+    </form>
+  </section>
+</main>
 
-        <button type="submit" class="btn">Calculate</button>
-      </form>
-    </section>
-  </main>
+<footer>
+  <p>Hackathon 2025</p>
+</footer>
 
-  
-
-  <footer>
-    <p>Hackathon 2025</p>
-  </footer>
-  
-    <script src="script.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
-
