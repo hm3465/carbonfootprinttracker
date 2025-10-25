@@ -8,29 +8,32 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const API_URL = "https://www.carboninterface.com/api/v1";
-const API_KEY = process.env.CARBON_API_KEY;
+const API_KEY = process.env.CLIMATIQ_API_KEY;
 
 // --- Vehicle endpoint ---
 app.post("/api/vehicle", async (req, res) => {
   try {
-    const response = await fetch(`${API_URL}/estimates`, {
+    const { distance_value, distance_unit } = req.body;
+
+    const response = await fetch("https://beta3.api.climatiq.io/estimate", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${API_KEY}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        type: "vehicle",
-        distance_unit: req.body.distance_unit,
-        distance_value: req.body.distance_value,
-        vehicle_model_id: req.body.vehicle_model_id
+        emission_factor: "passenger_vehicle-vehicle_type_car-fuel_type_gasoline",
+        parameters: {
+          distance: distance_value,
+          distance_unit: distance_unit || "km"
+        }
       })
     });
 
     const data = await response.json();
-    res.json(data);
+    res.json({ data: { attributes: { carbon_kg: data.co2e } } });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Vehicle request failed" });
   }
 });
@@ -38,23 +41,27 @@ app.post("/api/vehicle", async (req, res) => {
 // --- Electricity endpoint ---
 app.post("/api/electricity", async (req, res) => {
   try {
-    const response = await fetch(`${API_URL}/estimates`, {
+    const { electricity_value, electricity_unit } = req.body;
+
+    const response = await fetch("https://beta3.api.climatiq.io/estimate", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${API_KEY}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        type: "electricity",
-        electricity_unit: req.body.electricity_unit,
-        electricity_value: req.body.electricity_value,
-        country: req.body.country
+        emission_factor: "electricity-energy_source_grid_mix",
+        parameters: {
+          energy: electricity_value,
+          energy_unit: electricity_unit || "kwh"
+        }
       })
     });
 
     const data = await response.json();
-    res.json(data);
+    res.json({ data: { attributes: { carbon_kg: data.co2e } } });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Electricity request failed" });
   }
 });
