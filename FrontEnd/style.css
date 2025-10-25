@@ -16,6 +16,48 @@ header {
   text-align: center;
   font-size: 1.5rem;
 }
+/* Header Container */
+.nav-container {
+  display: flex;               /* horizontal layout */
+  justify-content: space-between; /* logo left, nav right */
+  align-items: center;
+  padding: 1rem 2rem;
+}
+
+/* Logo */
+.logo {
+  font-size: 1.8rem;
+  font-weight: bold;
+}
+
+/* Navigation */
+nav ul {
+  list-style: none;            /* remove bullets */
+  display: flex;               /* horizontal layout */
+  gap: 1.5rem;                 /* space between tabs */
+  margin: 0;
+  padding: 0;
+}
+
+nav ul li a {
+  text-decoration: none;
+  color: white;                /* matches header */
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+/* Hover Effect */
+nav ul li a:hover {
+  background-color: #81c784;  /* soft green hover */
+  transform: translateY(-2px); /* subtle lift */
+}
+
+/* Active Page Tab */
+nav ul li a.active {
+  background-color: #66bb6a;  /* darker green for active page */
+}
 
 main {
   flex: 1;
@@ -35,7 +77,7 @@ section {
 
 section:hover {
   transform: translateY(-5px) scale(1.03); /* lift and slightly grow */
-  box-shadow: 0 10px 20px rgba(0,0,0,0.2); /* stronger shadow on hover */
+  box-shadow: 0 10px 20px rgba(13, 112, 20, 0.2); /* stronger shadow on hover */
 }
 
 /* Summary Card */
