@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Daily Footprint Summary</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<header>
+  <div class="nav-container">
+    <h1 class="logo">Carbon Footprint Tracker</h1>
+    <nav>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="tracker.html">New Entry</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="quiz-container" style="max-width: 900px;">
+    <h2 style="margin-bottom:1rem;">Summary</h2>
+
+    <div class="summary-card" style="margin-bottom:1.25rem;">
+      <div class="total">Total: <span id="totalOut">0.00 kg</span></div>
+      <ul>
+        <li>Travel: <span id="travelOut">0.00 kg</span></li>
+        <li>Electricity: <span id="elecOut">0.00 kg</span></li>
+        <li>Expenses: <span id="expOut">0.00 kg</span></li>
+      </ul>
+      <div class="tip" id="tipOut">—</div>
+    </div>
+
+    <section style="margin:1rem 0;">
+      <h3>Trips</h3>
+      <div id="tripsTable" class="hint">No trips recorded.</div>
+    </section>
+
+    <section style="margin:1rem 0;">
+      <h3>Electricity</h3>
+      <div id="elecDetail" class="hint">—</div>
+    </section>
+
+    <section style="margin:1rem 0;">
+      <h3>Expenses</h3>
+      <div id="expTable" class="hint">No expenses recorded.</div>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <p>Hackathon 2025</p>
+</footer>
+
+<script src="summary.js" defer></script>
+</body>
+</html>

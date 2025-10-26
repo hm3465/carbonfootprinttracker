@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Track My Footprint</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<header>
+  <div class="nav-container">
+    <h1 class="logo">Carbon Footprint Tracker</h1>
+    <nav>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="why.html">Why</a></li>
+        <li><a href="how.html">How</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="quiz-container" style="max-width: 900px;">
+    <h2 style="margin-bottom:1rem;">Daily Inputs</h2>
+
+    <!-- TRAVEL -->
+    <section>
+      <h3 style="margin: .5rem 0 1rem;">Travel (add trips)</h3>
+      <div id="tripList"></div>
+      <button id="addTripBtn" class="btn" type="button" style="margin-top: .75rem;">+ Add Trip</button>
+      <p class="hint" style="margin-top:.5rem;">
+        Add each origin → destination you made today. If you know the distance, enter it (km). If blank, we’ll skip that trip.
+      </p>
+    </section>
+
+    <hr style="margin:1.5rem 0; border: none; border-top:1px solid rgba(255,255,255,.3)"/>
+
+    <!-- ELECTRICITY -->
+    <section>
+      <h3 style="margin:.5rem 0 1rem;">Electricity</h3>
+      <div class="form-group">
+        <label for="kwh">kWh used today</label>
+        <input id="kwh" type="number" min="0" step="0.1" placeholder="e.g., 18"/>
+      </div>
+      <div class="form-group">
+        <label for="gridZone">Country code (for grid mix)</label>
+        <select id="gridZone">
+          <option value="us">United States</option>
+          <option value="gb">United Kingdom</option>
+          <option value="de">Germany</option>
+          <option value="in">India</option>
+          <option value="cn">China</option>
+        </select>
+        <p class="hint">This feeds your existing /api/electricity endpoint.</p>
+      </div>
+    </section>
+
+    <hr style="margin:1.5rem 0; border: none; border-top:1px solid rgba(255,255,255,.3)"/>
+
+    <!-- EXPENSES -->
+    <section>
+      <h3 style="margin:.5rem 0 1rem;">Expenses (add purchases)</h3>
+      <div id="expenseList"></div>
+      <button id="addExpenseBtn" class="btn" type="button" style="margin-top:.75rem;">+ Add Expense</button>
+      <p class="hint" style="margin-top:.5rem;">
+        Simple spend-based estimate (kg CO₂e per $) by category. You can tweak factors in <code>tracker.js</code>.
+      </p>
+    </section>
+
+    <div class="quiz-actions" style="justify-content:flex-end; margin-top:2rem;">
+      <button id="calcBtn" class="btn">Calculate Footprint</button>
+    </div>
+
+    <!-- SUMMARY PREVIEW -->
+    <section style="margin-top:2rem;">
+      <div class="summary-card">
+        <div class="total">Total: <span id="totalOut">0.00 kg</span></div>
+        <ul>
+          <li>Travel: <span id="travelOut">0.00 kg</span></li>
+          <li>Electricity: <span id="elecOut">0.00 kg</span></li>
+          <li>Expenses: <span id="expOut">0.00 kg</span></li>
+        </ul>
+        <div class="tip" id="tipOut">Enter your data and hit Calculate.</div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <p>Hackathon 2025</p>
+</footer>
+
+<!-- Use defer so the DOM exists before JS runs -->
+<script src="tracker.js" defer></script>
+</body>
+</html>

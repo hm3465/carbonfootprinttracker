@@ -275,5 +275,14 @@ footer {
   }
 }
 
-
-
+/* ---- Added for tracker rows ---- */
+.trip-row select, .trip-row input,
+.expense-row select, .expense-row input {
+  padding: 0.55rem;
+}
+.trip-row, .expense-row {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 10px;
+  padding: .6rem;
+}
