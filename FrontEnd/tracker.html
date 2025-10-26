@@ -30,7 +30,7 @@
       <div id="tripList"></div>
       <button id="addTripBtn" class="btn" type="button" style="margin-top:.75rem;">+ Add Trip</button>
       <p class="hint" style="margin-top:.5rem;">
-        Add each origin → destination you made today. If you know the distance, enter it (km). If blank, we’ll skip that trip.
+        Add each trip you made today. Enter distance in km. Supported modes: Car, Air, and Rail.
       </p>
     </section>
 
@@ -40,19 +40,13 @@
     <section>
       <h3 style="margin:.5rem 0 1rem;">Electricity</h3>
       <div class="form-group">
-        <label for="kwh">kWh used today</label>
+        <label for="kwh">Electricity used (kWh)</label>
         <input id="kwh" type="number" min="0" step="0.1" placeholder="e.g., 18"/>
       </div>
       <div class="form-group">
-        <label for="gridZone">Country code (for grid mix)</label>
-        <select id="gridZone">
-          <option value="us">United States</option>
-          <option value="gb">United Kingdom</option>
-          <option value="de">Germany</option>
-          <option value="in">India</option>
-          <option value="cn">China</option>
-        </select>
-        <p class="hint">This feeds your /api/electricity endpoint.</p>
+        <label for="gridZone">Region (type your country code)</label>
+        <input id="gridZone" type="text" placeholder="e.g., US or IN" maxlength="3" style="text-transform: uppercase;"/>
+        <p class="hint">Enter your 2-letter country code (e.g., US, GB, IN, DE, CN).</p>
       </div>
     </section>
 
@@ -93,259 +87,221 @@
 
 <script>
 (function () {
-  // ---- Config & helpers (ES5) ----
-  var API_BASE = (location.origin.indexOf("http") === 0 && location.host) ? location.origin : "http://localhost:3000";
+  const API_BASE = (location.origin.startsWith("http") && location.host)
+    ? location.origin
+    : "http://localhost:3000";
 
   function $(id){ return document.getElementById(id); }
-  function numberOrZero(v){ var n = Number(v); return isFinite(n) && n > 0 ? n : 0; }
+  function numberOrZero(v){ const n = Number(v); return isFinite(n) && n > 0 ? n : 0; }
 
-  var LOCAL_TRAVEL_FACTORS_KG_PER_KM = { flight_short: 0.15, train: 0.041, bus: 0.105 };
-  var EXPENSE_FACTORS_KG_PER_USD = { groceries: 0.06, apparel: 0.09, electronics: 0.16, dining: 0.10, other: 0.07 };
+  // Local fallback factors
+  const LOCAL_TRAVEL_FACTORS_KG_PER_KM = {
+    air: 0.15,
+    rail: 0.041
+  };
+  const EXPENSE_FACTORS_KG_PER_USD = {
+    groceries: 0.06,
+    apparel: 0.09,
+    electronics: 0.16,
+    dining: 0.10,
+    other: 0.07
+  };
 
-  // ---- Row builders using createElement (no template strings) ----
+  // Create dynamic rows
   function createTripRow() {
-    var row = document.createElement("div");
+    const row = document.createElement("div");
     row.className = "trip-row";
     row.style.cssText = "margin-bottom:.75rem;display:grid;gap:.5rem;grid-template-columns:1fr 1fr 1fr 120px 100px;";
 
-    var sel = document.createElement("select");
+    const sel = document.createElement("select");
     sel.className = "trip-mode";
-    sel.innerHTML =
-      '<option value="car">Car</option>' +
-      '<option value="flight_short">Flight (short)</option>' +
-      '<option value="train">Train</option>' +
-      '<option value="bus">Bus</option>';
+    sel.innerHTML = `
+      <option value="car">Car</option>
+      <option value="air">Air</option>
+      <option value="rail">Rail</option>`;
 
-    var origin = document.createElement("input");
+    const origin = document.createElement("input");
     origin.className = "trip-origin";
     origin.placeholder = "Origin (city/airport)";
 
-    var dest = document.createElement("input");
+    const dest = document.createElement("input");
     dest.className = "trip-dest";
     dest.placeholder = "Destination (city/airport)";
 
-    var dist = document.createElement("input");
+    const dist = document.createElement("input");
     dist.className = "trip-dist";
     dist.type = "number"; dist.min = "0"; dist.step = "0.1";
     dist.placeholder = "Distance (km)";
 
-    var removeBtn = document.createElement("button");
+    const removeBtn = document.createElement("button");
     removeBtn.className = "link-reset remove-trip";
     removeBtn.type = "button";
     removeBtn.textContent = "Remove";
 
-    row.appendChild(sel);
-    row.appendChild(origin);
-    row.appendChild(dest);
-    row.appendChild(dist);
-    row.appendChild(removeBtn);
+    row.append(sel, origin, dest, dist, removeBtn);
     return row;
   }
 
   function createExpenseRow() {
-    var row = document.createElement("div");
+    const row = document.createElement("div");
     row.className = "expense-row";
     row.style.cssText = "margin-bottom:.75rem;display:grid;gap:.5rem;grid-template-columns:2fr 1fr 100px;";
 
-    var desc = document.createElement("input");
+    const desc = document.createElement("input");
     desc.className = "expense-desc";
     desc.placeholder = "Description (optional)";
 
-    var cat = document.createElement("select");
+    const cat = document.createElement("select");
     cat.className = "expense-cat";
-    cat.innerHTML =
-      '<option value="groceries">Groceries</option>' +
-      '<option value="apparel">Apparel</option>' +
-      '<option value="electronics">Electronics</option>' +
-      '<option value="dining">Dining</option>' +
-      '<option value="other">Other</option>';
+    cat.innerHTML = `
+      <option value="groceries">Groceries</option>
+      <option value="apparel">Apparel</option>
+      <option value="electronics">Electronics</option>
+      <option value="dining">Dining</option>
+      <option value="other">Other</option>`;
 
-    var right = document.createElement("div");
-    right.style.cssText = "display:flex;gap:.5rem;";
-
-    var amt = document.createElement("input");
+    const amt = document.createElement("input");
     amt.className = "expense-amt";
     amt.type = "number"; amt.min = "0"; amt.step = "0.01";
     amt.placeholder = "$";
 
-    var removeBtn = document.createElement("button");
+    const removeBtn = document.createElement("button");
     removeBtn.className = "link-reset remove-expense";
     removeBtn.type = "button";
     removeBtn.textContent = "Remove";
 
-    right.appendChild(amt);
-    right.appendChild(removeBtn);
+    const right = document.createElement("div");
+    right.style.cssText = "display:flex;gap:.5rem;";
+    right.append(amt, removeBtn);
 
-    row.appendChild(desc);
-    row.appendChild(cat);
-    row.appendChild(right);
+    row.append(desc, cat, right);
     return row;
   }
 
-  // ---- Safe fetch POST (ES5) ----
   function postJSON(url, body, onSuccess, onError) {
-    try {
-      fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-      })
-      .then(function(res){
-        if (!res.ok) { return res.text().then(function(t){ throw new Error("POST " + url + " failed (" + res.status + "): " + t); }); }
-        return res.json();
-      })
-      .then(onSuccess)
-      .catch(onError);
-    } catch (e) {
-      onError(e);
-    }
+    fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    })
+    .then(res => {
+      if (!res.ok) return res.text().then(t => { throw new Error(`POST ${url} failed (${res.status}): ${t}`); });
+      return res.json();
+    })
+    .then(onSuccess)
+    .catch(onError);
   }
 
-  // ---- Wire up once DOM ready ----
   document.addEventListener("DOMContentLoaded", function(){
-    var tripList = $("tripList");
-    var expenseList = $("expenseList");
+    const tripList = $("tripList");
+    const expenseList = $("expenseList");
 
-    // seed one row each
     tripList.appendChild(createTripRow());
     expenseList.appendChild(createExpenseRow());
 
-    $("addTripBtn").addEventListener("click", function () {
-      tripList.appendChild(createTripRow());
+    $("addTripBtn").addEventListener("click", () => tripList.appendChild(createTripRow()));
+    $("addExpenseBtn").addEventListener("click", () => expenseList.appendChild(createExpenseRow()));
+
+    tripList.addEventListener("click", e => {
+      if (e.target.classList.contains("remove-trip")) e.target.closest(".trip-row").remove();
+    });
+    expenseList.addEventListener("click", e => {
+      if (e.target.classList.contains("remove-expense")) e.target.closest(".expense-row").remove();
     });
 
-    $("addExpenseBtn").addEventListener("click", function () {
-      expenseList.appendChild(createExpenseRow());
-    });
+    $("calcBtn").addEventListener("click", () => {
+      const kwh = numberOrZero($("kwh").value);
+      const region = ($("gridZone").value || "US").trim().toUpperCase();
 
-    // delegated remove
-    tripList.addEventListener("click", function (e) {
-      if (e.target && e.target.className.indexOf("remove-trip") > -1) {
-        var row = e.target.closest ? e.target.closest(".trip-row") : e.target.parentNode;
-        if (row && row.parentNode) row.parentNode.removeChild(row);
-      }
-    });
-    expenseList.addEventListener("click", function (e) {
-      if (e.target && e.target.className.indexOf("remove-expense") > -1) {
-        var row = e.target.closest ? e.target.closest(".expense-row") : e.target.parentNode.parentNode;
-        if (row && row.parentNode) row.parentNode.removeChild(row);
-      }
-    });
+      let travelKg = 0, elecKg = 0, expKg = 0;
+      const tripsSnapshot = [], expensesSnapshot = [];
 
-    $("calcBtn").addEventListener("click", function () {
-      var kwh = numberOrZero($("kwh").value);
-      var gridCountry = $("gridZone").value || "us";
-
-      var travelKg = 0, elecKg = 0, expKg = 0;
-      var tripsSnapshot = [], expensesSnapshot = [];
-
-      // gather trip rows
-      var tripRows = tripList.getElementsByClassName("trip-row");
-      // process trips sequentially to keep ES5 simple
-      var i = 0;
+      const tripRows = tripList.getElementsByClassName("trip-row");
+      let i = 0;
 
       function processNextTrip() {
-        if (i >= tripRows.length) {
-          // electricity next
-          processElectricity();
-          return;
-        }
-        var row = tripRows[i++];
-        var mode = row.querySelector(".trip-mode").value;
-        var origin = row.querySelector(".trip-origin").value.trim();
-        var dest = row.querySelector(".trip-dest").value.trim();
-        var distKm = numberOrZero(row.querySelector(".trip-dist").value);
-        if (distKm <= 0) { processNextTrip(); return; }
+        if (i >= tripRows.length) return processElectricity();
+        const row = tripRows[i++];
+        const mode = row.querySelector(".trip-mode").value;
+        const origin = row.querySelector(".trip-origin").value.trim();
+        const dest = row.querySelector(".trip-dest").value.trim();
+        const distKm = numberOrZero(row.querySelector(".trip-dist").value);
+        if (distKm <= 0) return processNextTrip();
 
-        if (mode === "car") {
-          postJSON(API_BASE + "/api/vehicle",
-            { distance_value: distKm, distance_unit: "km" },
-            function (j) {
-              var kg = (j && j.data && j.data.attributes && +j.data.attributes.carbon_kg) || 0;
-              travelKg += kg;
-              tripsSnapshot.push({ mode: mode, origin: origin, dest: dest, distKm: distKm, kg: +kg.toFixed(3) });
-              processNextTrip();
-            },
-            function (err) {
-              alert(err.message || "Vehicle API failed.");
-              processNextTrip();
-            }
-          );
-        } else {
-          var factor = LOCAL_TRAVEL_FACTORS_KG_PER_KM[mode] || 0.1;
-          var kg2 = distKm * factor;
-          travelKg += kg2;
-          tripsSnapshot.push({ mode: mode, origin: origin, dest: dest, distKm: distKm, kg: +kg2.toFixed(3) });
-          processNextTrip();
-        }
+        postJSON(`${API_BASE}/api/vehicle`,
+          { distance_value: distKm, distance_unit: "km", mode },
+          j => {
+            const kg = (j?.data?.attributes?.carbon_kg) || 0;
+            travelKg += kg;
+            tripsSnapshot.push({ mode, origin, dest, distKm, kg: +kg.toFixed(3) });
+            processNextTrip();
+          },
+          err => {
+            console.warn("Vehicle API failed:", err.message);
+            const factor = LOCAL_TRAVEL_FACTORS_KG_PER_KM[mode] || 0.1;
+            const kg = distKm * factor;
+            travelKg += kg;
+            tripsSnapshot.push({ mode, origin, dest, distKm, kg: +kg.toFixed(3) });
+            processNextTrip();
+          }
+        );
       }
 
       function processElectricity() {
         if (kwh > 0) {
-          postJSON(API_BASE + "/api/electricity",
-            { electricity_value: kwh, electricity_unit: "kwh", country: gridCountry },
-            function (j) {
-              elecKg = (j && j.data && j.data.attributes && +j.data.attributes.carbon_kg) || 0;
+          postJSON(`${API_BASE}/api/electricity`,
+            { electricity_value: kwh, electricity_unit: "kwh", region },
+            j => {
+              elecKg = (j?.data?.attributes?.carbon_kg) || 0;
               processExpenses();
             },
-            function (err) {
-              alert(err.message || "Electricity API failed.");
+            err => {
+              console.warn("Electricity API failed:", err.message);
               processExpenses();
             }
           );
-        } else {
-          processExpenses();
-        }
+        } else processExpenses();
       }
 
       function processExpenses() {
-        var expRows = expenseList.getElementsByClassName("expense-row");
-        for (var k = 0; k < expRows.length; k++) {
-          var row = expRows[k];
-          var cat = row.querySelector(".expense-cat").value;
-          var desc = row.querySelector(".expense-desc").value.trim();
-          var amt = numberOrZero(row.querySelector(".expense-amt").value);
+        const expRows = expenseList.getElementsByClassName("expense-row");
+        for (const row of expRows) {
+          const cat = row.querySelector(".expense-cat").value;
+          const desc = row.querySelector(".expense-desc").value.trim();
+          const amt = numberOrZero(row.querySelector(".expense-amt").value);
           if (amt <= 0) continue;
-          var perDollar = EXPENSE_FACTORS_KG_PER_USD[cat] || EXPENSE_FACTORS_KG_PER_USD.other;
-          var kg = amt * perDollar;
+          const perDollar = EXPENSE_FACTORS_KG_PER_USD[cat] || EXPENSE_FACTORS_KG_PER_USD.other;
+          const kg = amt * perDollar;
           expKg += kg;
-          expensesSnapshot.push({ cat: cat, desc: desc, amt: amt, kg: +kg.toFixed(3) });
+          expensesSnapshot.push({ cat, desc, amt, kg: +kg.toFixed(3) });
         }
         finish();
       }
 
       function finish() {
-        var totalKg = travelKg + elecKg + expKg;
-        $("travelOut").textContent = travelKg.toFixed(2) + " kg";
-        $("elecOut").textContent   = elecKg.toFixed(2) + " kg";
-        $("expOut").textContent    = expKg.toFixed(2) + " kg";
-        $("totalOut").textContent  = totalKg.toFixed(2) + " kg";
-        $("tipOut").textContent = totalKg > 20 ? "Big day. Consider combining trips and dialing back high-impact purchases."
-          : totalKg > 10 ? "Nice work. Try a car-free errand or lowering A/C a notch."
+        const totalKg = travelKg + elecKg + expKg;
+        $("travelOut").textContent = `${travelKg.toFixed(2)} kg`;
+        $("elecOut").textContent = `${elecKg.toFixed(2)} kg`;
+        $("expOut").textContent = `${expKg.toFixed(2)} kg`;
+        $("totalOut").textContent = `${totalKg.toFixed(2)} kg`;
+        $("tipOut").textContent =
+          totalKg > 20 ? "Big day. Consider combining trips and lowering power usage."
+          : totalKg > 10 ? "Nice work. Try a car-free errand or less A/C."
           : "Great job! Keep up the low-impact habits.";
 
-        // persist + go to summary
-        try {
-          var summary = {
-            totals: {
-              travelKg: +travelKg.toFixed(3),
-              elecKg: +elecKg.toFixed(3),
-              expKg: +expKg.toFixed(3),
-              totalKg: +totalKg.toFixed(3)
-            },
-            details: {
-              trips: tripsSnapshot,
-              electricity: { kwh: kwh, gridCountry: gridCountry },
-              expenses: expensesSnapshot
-            },
-            ts: Date.now()
-          };
-          sessionStorage.setItem("footprintResult", JSON.stringify(summary));
-        } catch (e) {}
+        const summary = {
+          totals: { travelKg, elecKg, expKg, totalKg },
+          details: {
+            trips: tripsSnapshot,
+            electricity: { kwh, region },
+            expenses: expensesSnapshot
+          },
+          ts: Date.now()
+        };
+        sessionStorage.setItem("footprintResult", JSON.stringify(summary));
         window.location.href = "summary.html";
       }
 
-      // kick off
       processNextTrip();
     });
   });
