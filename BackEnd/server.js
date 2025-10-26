@@ -5,104 +5,117 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 
-
+// --- Setup ---
 dotenv.config();
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Resolve __dirname for ES modules
-import path from "path";
-import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-app.use(express.static(__dirname));
 
+// Optional: serve static files if you ever want to open http://127.0.0.1:3000/tracker.html
+// app.use(express.static(__dirname));
 
-// ✅ Serve your static files (index.html, tracker.html, summary.html, style.css, tracker.js, summary.js)
-app.use(express.static(__dirname));
-
-// ✅ Tiny health check to confirm the server is reachable from the browser
+// Health check
 app.get("/health", (req, res) => {
-  res.json({
-    ok: true,
-    apiKeyLoaded: !!process.env.CLIMATIQ_API_KEY,
-    msg: "Server is up"
-  });
+  res.json({ ok: true, apiKeyLoaded: !!process.env.CLIMATIQ_API_KEY });
 });
 
-// ✅ Check if API key is loaded
-console.log("CLIMATIQ API Key loaded:", process.env.CLIMATIQ_API_KEY ? "Yes" : "No");
-
-const API_URL = "https://api.climatiq.io/estimate";
+const CLIMATIQ_URL = "https://api.climatiq.io/estimate";
 const API_KEY = process.env.CLIMATIQ_API_KEY;
 
-// --- Vehicle endpoint ---
+// --- Vehicle (car) ---
 app.post("/api/vehicle", async (req, res) => {
   try {
     const { distance_value, distance_unit } = req.body;
-    const response = await fetch(API_URL, {
+
+    const payload = {
+      // 👇 Selector object, not a string
+      emission_factor: {
+        activity_id: "passenger_vehicle-vehicle_type_car-fuel_type_gasoline"
+        // Optionally add: data_version: "^2"
+      },
+      // Both notations work for distance; this one is explicit:
+      parameters: {
+        distance: {
+          value: distance_value,
+          unit: distance_unit || "km"
+        }
+      }
+    };
+
+    const r = await fetch(CLIMATIQ_URL, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${API_KEY}`,
+        Authorization: `Bearer ${API_KEY}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        emission_factor: "passenger_vehicle-vehicle_type_car-fuel_type_gasoline",
-        parameters: {
-          distance: distance_value,
-          distance_unit: distance_unit || "km"
-        }
-      })
+      body: JSON.stringify(payload)
     });
 
-    if (!response.ok) {
-      const text = await response.text();
-      console.error("Climatiq vehicle error:", response.status, text);
-      return res.status(500).json({ error: "Vehicle request failed", details: text });
+    if (!r.ok) {
+      const t = await r.text();
+      console.error("Vehicle API error:", r.status, t);
+      return res.status(r.status).json({ error: "Vehicle API failed", details: t });
     }
 
-    const data = await response.json();
+    const data = await r.json();
     res.json({ data: { attributes: { carbon_kg: data.co2e || 0 } } });
-  } catch (error) {
-    console.error("Vehicle request failed:", error);
-    res.status(500).json({ error: "Vehicle request failed" });
+  } catch (e) {
+    console.error("Vehicle endpoint error:", e);
+    res.status(500).json({ error: "Vehicle endpoint failed" });
   }
 });
 
-// --- Electricity endpoint ---
+// --- Electricity ---
 app.post("/api/electricity", async (req, res) => {
   try {
-    const { electricity_value, electricity_unit } = req.body;
-    const response = await fetch(API_URL, {
+    const { electricity_value, electricity_unit, country } = req.body;
+
+    const payload = {
+      // 👇 Selector object, not a string
+      emission_factor: {
+        activity_id: "electricity-energy_source_grid_mix"
+        // Optionally add: data_version: "^2"
+      },
+      parameters: {
+        // Explicit value+unit form
+        energy: {
+          value: electricity_value,
+          unit: electricity_unit || "kwh"
+        },
+        // Country code is still accepted by many electricity factors
+        country: (country || "us").toLowerCase()
+      }
+    };
+
+    const r = await fetch(CLIMATIQ_URL, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${API_KEY}`,
+        Authorization: `Bearer ${API_KEY}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        emission_factor: "electricity-energy_source_grid_mix",
-        parameters: {
-          energy: electricity_value,
-          energy_unit: electricity_unit || "kwh"
-        }
-      })
+      body: JSON.stringify(payload)
     });
 
-    if (!response.ok) {
-      const text = await response.text();
-      console.error("Climatiq electricity error:", response.status, text);
-      return res.status(500).json({ error: "Electricity request failed", details: text });
+    if (!r.ok) {
+      const t = await r.text();
+      console.error("Electricity API error:", r.status, t);
+      return res.status(r.status).json({ error: "Electricity API failed", details: t });
     }
 
-    const data = await response.json();
+    const data = await r.json();
     res.json({ data: { attributes: { carbon_kg: data.co2e || 0 } } });
-  } catch (error) {
-    console.error("Electricity request failed:", error);
-    res.status(500).json({ error: "Electricity request failed" });
+  } catch (e) {
+    console.error("Electricity endpoint error:", e);
+    res.status(500).json({ error: "Electricity endpoint failed" });
   }
 });
 
-// --- Start server ---
+// --- Start ---
 const PORT = 3000;
-app.listen(PORT, () => console.log(`✅ Server running on http://localhost:${PORT}`));
+app.listen(PORT, () => {
+  console.log(`✅ Server running on http://127.0.0.1:${PORT}`);
+  console.log(`🔑 CLIMATIQ_API_KEY loaded: ${API_KEY ? "Yes" : "No"}`);
+});
