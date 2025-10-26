@@ -1,111 +1,103 @@
 import express from "express";
 import fetch from "node-fetch";
-import cors from "cors";
 import dotenv from "dotenv";
+import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 
 dotenv.config();
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+// 🧭 Resolve __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ✅ Serve static frontend files
+app.use(express.static(__dirname));
+
+// ✅ Default route to index.html
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
+
+// ✅ Health check
+app.get("/health", (req, res) => {
+  res.json({
+    ok: true,
+    apiKeyLoaded: !!process.env.CLIMATIQ_API_KEY,
+    msg: "Server is up"
+  });
+});
+
+// --- Climatiq setup ---
+const API_URL = "https://api.climatiq.io/estimate";
 const API_KEY = process.env.CLIMATIQ_API_KEY;
 
-// Health check
-app.get("/health", (req, res) => {
-  res.json({ ok: true, apiKeyLoaded: !!API_KEY });
-});
-
-// ✅ VEHICLE EMISSIONS
+// --- Vehicle endpoint ---
 app.post("/api/vehicle", async (req, res) => {
   try {
-    const { distance_value, distance_unit, mode } = req.body;
-
-    if (!distance_value || !mode) {
-      return res.status(400).json({ error: "Missing required fields." });
-    }
-
-    // Choose emission factor by mode
-    const factors = {
-      car: "passenger_vehicle-vehicle_type_car-fuel_source_na-distance_na-engine_size_na",
-      air: "passenger_flight-route_type_domestic-fuel_source_jet_distance_na-class_na-rf_included_na",
-      rail: "passenger_train-route_type_na-fuel_source_na-distance_na"
+    const { distance_value, distance_unit = "km", mode } = req.body;
+    const factorMap = {
+      air: "passenger_flight-route_type_domestic-fuel_type_jet",
+      rail: "passenger_train-route_type_national",
+      car: "passenger_vehicle-vehicle_type_car-fuel_type_gasoline"
     };
+    const emission_factor = factorMap[mode] || factorMap.car;
 
-    const factorId = factors[mode];
-    if (!factorId) return res.status(400).json({ error: "Unsupported mode." });
-
-    const body = {
-      emission_factor: { id: factorId },
-      parameters: {
-        distance: distance_value,
-        distance_unit: distance_unit || "km"
-      }
-    };
-
-    const response = await fetch("https://api.climatiq.io/compute", {
+    const response = await fetch(API_URL, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${API_KEY}`,
+        "Authorization": `Bearer ${API_KEY}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify({
+        emission_factor,
+        parameters: {
+          distance: distance_value,
+          distance_unit
+        }
+      })
     });
 
     const data = await response.json();
-    console.log("DEBUG: Climatiq VEHICLE response:", JSON.stringify(data, null, 2));
-
-    if (!response.ok) {
-      console.error("Vehicle API error:", data);
-      return res.status(500).json({ error: "Vehicle API failed", data });
-    }
-
-    res.json(data);
+    res.json({ data: { attributes: { carbon_kg: data.co2e || 0 } } });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Vehicle API failed" });
   }
 });
 
-// ✅ ELECTRICITY EMISSIONS
+// --- Electricity endpoint ---
 app.post("/api/electricity", async (req, res) => {
   try {
-    const { electricity_value, electricity_unit, region } = req.body;
+    const { electricity_value, electricity_unit = "kwh", country = "us" } = req.body;
 
-    if (!electricity_value) {
-      return res.status(400).json({ error: "Missing electricity_value" });
-    }
-
-    const body = {
-      region: region || "US",
-      amount: {
-        energy: electricity_value,
-        energy_unit: electricity_unit || "kwh"
-      }
-    };
-
-    const response = await fetch("https://api.climatiq.io/energy/v1.1/electricity", {
+    const response = await fetch(API_URL, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${API_KEY}`,
+        "Authorization": `Bearer ${API_KEY}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify({
+        emission_factor: "electricity-energy_source_grid_mix",
+        parameters: {
+          energy: electricity_value,
+          energy_unit: electricity_unit,
+          country
+        }
+      })
     });
 
     const data = await response.json();
-    console.log("DEBUG: Climatiq ELECTRICITY response:", JSON.stringify(data, null, 2));
-
-    if (!response.ok) {
-      console.error("Electricity API error:", data);
-      return res.status(500).json({ error: "Electricity API failed", data });
-    }
-
-    res.json(data);
+    res.json({ data: { attributes: { carbon_kg: data.co2e || 0 } } });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Electricity API failed" });
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+// ✅ Start server
+const PORT = 3000;
+app.listen(PORT, () => console.log(`✅ Server running at http://localhost:${PORT}`));

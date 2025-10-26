@@ -30,7 +30,7 @@
       <div id="tripList"></div>
       <button id="addTripBtn" class="btn" type="button" style="margin-top:.75rem;">+ Add Trip</button>
       <p class="hint" style="margin-top:.5rem;">
-        Add each trip you made today. Enter distance in km. Supported modes: Car, Air, and Rail.
+        Add each trip you made today and its distance in kilometers.
       </p>
     </section>
 
@@ -40,13 +40,13 @@
     <section>
       <h3 style="margin:.5rem 0 1rem;">Electricity</h3>
       <div class="form-group">
-        <label for="kwh">Electricity used (kWh)</label>
+        <label for="kwh">kWh used today</label>
         <input id="kwh" type="number" min="0" step="0.1" placeholder="e.g., 18"/>
       </div>
       <div class="form-group">
-        <label for="gridZone">Region (type your country code)</label>
-        <input id="gridZone" type="text" placeholder="e.g., US or IN" maxlength="3" style="text-transform: uppercase;"/>
-        <p class="hint">Enter your 2-letter country code (e.g., US, GB, IN, DE, CN).</p>
+        <label for="gridZone">Country code (for grid mix)</label>
+        <input id="gridZone" type="text" maxlength="2" placeholder="e.g., us"/>
+        <p class="hint">Type your 2-letter country code (e.g., us, in, de, gb, cn).</p>
       </div>
     </section>
 
@@ -87,222 +87,178 @@
 
 <script>
 (function () {
-  const API_BASE = (location.origin.startsWith("http") && location.host)
-    ? location.origin
-    : "http://localhost:3000";
-
+  const API_BASE = "http://localhost:3000";
   function $(id){ return document.getElementById(id); }
   function numberOrZero(v){ const n = Number(v); return isFinite(n) && n > 0 ? n : 0; }
 
-  // Local fallback factors
-  const LOCAL_TRAVEL_FACTORS_KG_PER_KM = {
-    air: 0.15,
-    rail: 0.041
-  };
-  const EXPENSE_FACTORS_KG_PER_USD = {
-    groceries: 0.06,
-    apparel: 0.09,
-    electronics: 0.16,
-    dining: 0.10,
-    other: 0.07
-  };
+  // Factors (fallbacks if API unavailable)
+  const LOCAL_TRAVEL_FACTORS_KG_PER_KM = { air: 0.15, rail: 0.041, car: 0.21 };
+  const EXPENSE_FACTORS_KG_PER_USD = { groceries: 0.06, apparel: 0.09, electronics: 0.16, dining: 0.10, other: 0.07 };
 
-  // Create dynamic rows
-  function createTripRow() {
-    const row = document.createElement("div");
-    row.className = "trip-row";
-    row.style.cssText = "margin-bottom:.75rem;display:grid;gap:.5rem;grid-template-columns:1fr 1fr 1fr 120px 100px;";
-
-    const sel = document.createElement("select");
-    sel.className = "trip-mode";
-    sel.innerHTML = `
-      <option value="car">Car</option>
-      <option value="air">Air</option>
-      <option value="rail">Rail</option>`;
-
-    const origin = document.createElement("input");
-    origin.className = "trip-origin";
-    origin.placeholder = "Origin (city/airport)";
-
-    const dest = document.createElement("input");
-    dest.className = "trip-dest";
-    dest.placeholder = "Destination (city/airport)";
-
-    const dist = document.createElement("input");
-    dist.className = "trip-dist";
-    dist.type = "number"; dist.min = "0"; dist.step = "0.1";
-    dist.placeholder = "Distance (km)";
-
-    const removeBtn = document.createElement("button");
-    removeBtn.className = "link-reset remove-trip";
-    removeBtn.type = "button";
-    removeBtn.textContent = "Remove";
-
-    row.append(sel, origin, dest, dist, removeBtn);
-    return row;
+  function tripRowTemplate(i) {
+    return `
+      <div class="trip-row" data-idx="${i}" style="margin-bottom:.75rem;display:grid;gap:.5rem;grid-template-columns:1fr 140px 100px;">
+        <select class="trip-mode">
+          <option value="car">Car</option>
+          <option value="air">Air</option>
+          <option value="rail">Rail</option>
+        </select>
+        <input class="trip-dist" type="number" min="0" step="0.1" placeholder="Distance (km)" />
+        <button class="link-reset remove-trip" type="button">Remove</button>
+      </div>
+    `;
   }
 
-  function createExpenseRow() {
-    const row = document.createElement("div");
-    row.className = "expense-row";
-    row.style.cssText = "margin-bottom:.75rem;display:grid;gap:.5rem;grid-template-columns:2fr 1fr 100px;";
-
-    const desc = document.createElement("input");
-    desc.className = "expense-desc";
-    desc.placeholder = "Description (optional)";
-
-    const cat = document.createElement("select");
-    cat.className = "expense-cat";
-    cat.innerHTML = `
-      <option value="groceries">Groceries</option>
-      <option value="apparel">Apparel</option>
-      <option value="electronics">Electronics</option>
-      <option value="dining">Dining</option>
-      <option value="other">Other</option>`;
-
-    const amt = document.createElement("input");
-    amt.className = "expense-amt";
-    amt.type = "number"; amt.min = "0"; amt.step = "0.01";
-    amt.placeholder = "$";
-
-    const removeBtn = document.createElement("button");
-    removeBtn.className = "link-reset remove-expense";
-    removeBtn.type = "button";
-    removeBtn.textContent = "Remove";
-
-    const right = document.createElement("div");
-    right.style.cssText = "display:flex;gap:.5rem;";
-    right.append(amt, removeBtn);
-
-    row.append(desc, cat, right);
-    return row;
+  function expenseRowTemplate(i) {
+    return `
+      <div class="expense-row" data-idx="${i}" style="margin-bottom:.75rem;display:grid;gap:.5rem;grid-template-columns:2fr 1fr 100px;">
+        <input class="expense-desc" placeholder="Description (optional)"/>
+        <select class="expense-cat">
+          <option value="groceries">Groceries</option>
+          <option value="apparel">Apparel</option>
+          <option value="electronics">Electronics</option>
+          <option value="dining">Dining</option>
+          <option value="other">Other</option>
+        </select>
+        <div style="display:flex; gap:.5rem;">
+          <input class="expense-amt" type="number" min="0" step="0.01" placeholder="$"/>
+          <button class="link-reset remove-expense" type="button">Remove</button>
+        </div>
+      </div>
+    `;
   }
 
-  function postJSON(url, body, onSuccess, onError) {
-    fetch(url, {
+  async function postJSON(url, body) {
+    const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
-    })
-    .then(res => {
-      if (!res.ok) return res.text().then(t => { throw new Error(`POST ${url} failed (${res.status}): ${t}`); });
-      return res.json();
-    })
-    .then(onSuccess)
-    .catch(onError);
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
   }
 
-  document.addEventListener("DOMContentLoaded", function(){
+  document.addEventListener("DOMContentLoaded", () => {
     const tripList = $("tripList");
     const expenseList = $("expenseList");
 
-    tripList.appendChild(createTripRow());
-    expenseList.appendChild(createExpenseRow());
+    tripList.insertAdjacentHTML("beforeend", tripRowTemplate(0));
+    expenseList.insertAdjacentHTML("beforeend", expenseRowTemplate(0));
 
-    $("addTripBtn").addEventListener("click", () => tripList.appendChild(createTripRow()));
-    $("addExpenseBtn").addEventListener("click", () => expenseList.appendChild(createExpenseRow()));
-
-    tripList.addEventListener("click", e => {
-      if (e.target.classList.contains("remove-trip")) e.target.closest(".trip-row").remove();
-    });
-    expenseList.addEventListener("click", e => {
-      if (e.target.classList.contains("remove-expense")) e.target.closest(".expense-row").remove();
+    $("addTripBtn").addEventListener("click", () => {
+      const i = tripList.querySelectorAll(".trip-row").length;
+      tripList.insertAdjacentHTML("beforeend", tripRowTemplate(i));
     });
 
-    $("calcBtn").addEventListener("click", () => {
+    $("addExpenseBtn").addEventListener("click", () => {
+      const i = expenseList.querySelectorAll(".expense-row").length;
+      expenseList.insertAdjacentHTML("beforeend", expenseRowTemplate(i));
+    });
+
+    tripList.addEventListener("click", (e) => {
+      if (e.target.classList.contains("remove-trip")) e.target.closest(".trip-row")?.remove();
+    });
+    expenseList.addEventListener("click", (e) => {
+      if (e.target.classList.contains("remove-expense")) e.target.closest(".expense-row")?.remove();
+    });
+
+    $("calcBtn").addEventListener("click", async () => {
+      const tripRows = [...document.querySelectorAll(".trip-row")];
+      const expenseRows = [...document.querySelectorAll(".expense-row")];
+
       const kwh = numberOrZero($("kwh").value);
-      const region = ($("gridZone").value || "US").trim().toUpperCase();
+      const gridCountry = $("gridZone").value.trim().toLowerCase() || "us";
 
       let travelKg = 0, elecKg = 0, expKg = 0;
       const tripsSnapshot = [], expensesSnapshot = [];
 
-      const tripRows = tripList.getElementsByClassName("trip-row");
-      let i = 0;
+      try {
+        const ping = await fetch(`${API_BASE}/health`).then(r => r.ok ? r.json() : null).catch(() => null);
+        if (!ping) {
+          alert("Cannot reach server at " + API_BASE);
+          return;
+        }
 
-      function processNextTrip() {
-        if (i >= tripRows.length) return processElectricity();
-        const row = tripRows[i++];
-        const mode = row.querySelector(".trip-mode").value;
-        const origin = row.querySelector(".trip-origin").value.trim();
-        const dest = row.querySelector(".trip-dest").value.trim();
-        const distKm = numberOrZero(row.querySelector(".trip-dist").value);
-        if (distKm <= 0) return processNextTrip();
+        // --- Travel ---
+        for (const row of tripRows) {
+          const mode = row.querySelector(".trip-mode").value;
+          const distKm = numberOrZero(row.querySelector(".trip-dist").value);
+          if (distKm <= 0) continue;
 
-        postJSON(`${API_BASE}/api/vehicle`,
-          { distance_value: distKm, distance_unit: "km", mode },
-          j => {
-            const kg = (j?.data?.attributes?.carbon_kg) || 0;
-            travelKg += kg;
-            tripsSnapshot.push({ mode, origin, dest, distKm, kg: +kg.toFixed(3) });
-            processNextTrip();
-          },
-          err => {
-            console.warn("Vehicle API failed:", err.message);
-            const factor = LOCAL_TRAVEL_FACTORS_KG_PER_KM[mode] || 0.1;
-            const kg = distKm * factor;
-            travelKg += kg;
-            tripsSnapshot.push({ mode, origin, dest, distKm, kg: +kg.toFixed(3) });
-            processNextTrip();
+          let kg = 0;
+          try {
+            const j = await postJSON(`${API_BASE}/api/vehicle`, {
+              distance_value: distKm,
+              distance_unit: "km",
+              mode
+            });
+            kg = Number(j?.data?.attributes?.carbon_kg) || 0;
+          } catch {
+            kg = distKm * (LOCAL_TRAVEL_FACTORS_KG_PER_KM[mode] || 0.1);
           }
-        );
-      }
+          travelKg += kg;
+          tripsSnapshot.push({ mode, distKm, kg: +kg.toFixed(3) });
+        }
 
-      function processElectricity() {
+        // --- Electricity ---
         if (kwh > 0) {
-          postJSON(`${API_BASE}/api/electricity`,
-            { electricity_value: kwh, electricity_unit: "kwh", region },
-            j => {
-              elecKg = (j?.data?.attributes?.carbon_kg) || 0;
-              processExpenses();
-            },
-            err => {
-              console.warn("Electricity API failed:", err.message);
-              processExpenses();
-            }
-          );
-        } else processExpenses();
-      }
+          try {
+            const j = await postJSON(`${API_BASE}/api/electricity`, {
+              electricity_value: kwh,
+              electricity_unit: "kwh",
+              country: gridCountry
+            });
+            elecKg = Number(j?.data?.attributes?.carbon_kg) || 0;
+          } catch {
+            elecKg = kwh * 0.45; // fallback approx
+          }
+        }
 
-      function processExpenses() {
-        const expRows = expenseList.getElementsByClassName("expense-row");
-        for (const row of expRows) {
+        // --- Expenses ---
+        for (const row of expenseRows) {
           const cat = row.querySelector(".expense-cat").value;
           const desc = row.querySelector(".expense-desc").value.trim();
           const amt = numberOrZero(row.querySelector(".expense-amt").value);
           if (amt <= 0) continue;
-          const perDollar = EXPENSE_FACTORS_KG_PER_USD[cat] || EXPENSE_FACTORS_KG_PER_USD.other;
+          const perDollar = EXPENSE_FACTORS_KG_PER_USD[cat] ?? EXPENSE_FACTORS_KG_PER_USD.other;
           const kg = amt * perDollar;
           expKg += kg;
           expensesSnapshot.push({ cat, desc, amt, kg: +kg.toFixed(3) });
         }
-        finish();
-      }
 
-      function finish() {
         const totalKg = travelKg + elecKg + expKg;
+
         $("travelOut").textContent = `${travelKg.toFixed(2)} kg`;
-        $("elecOut").textContent = `${elecKg.toFixed(2)} kg`;
-        $("expOut").textContent = `${expKg.toFixed(2)} kg`;
-        $("totalOut").textContent = `${totalKg.toFixed(2)} kg`;
+        $("elecOut").textContent   = `${elecKg.toFixed(2)} kg`;
+        $("expOut").textContent    = `${expKg.toFixed(2)} kg`;
+        $("totalOut").textContent  = `${totalKg.toFixed(2)} kg`;
         $("tipOut").textContent =
-          totalKg > 20 ? "Big day. Consider combining trips and lowering power usage."
-          : totalKg > 10 ? "Nice work. Try a car-free errand or less A/C."
+          totalKg > 20 ? "Big day. Consider combining trips and dialing back high-impact purchases."
+          : totalKg > 10 ? "Nice work. Try a car-free errand or lowering A/C a notch."
           : "Great job! Keep up the low-impact habits.";
 
         const summary = {
-          totals: { travelKg, elecKg, expKg, totalKg },
+          totals: {
+            travelKg: +travelKg.toFixed(3),
+            elecKg: +elecKg.toFixed(3),
+            expKg: +expKg.toFixed(3),
+            totalKg: +totalKg.toFixed(3)
+          },
           details: {
             trips: tripsSnapshot,
-            electricity: { kwh, region },
+            electricity: { kwh, gridCountry },
             expenses: expensesSnapshot
           },
           ts: Date.now()
         };
+
         sessionStorage.setItem("footprintResult", JSON.stringify(summary));
         window.location.href = "summary.html";
-      }
 
-      processNextTrip();
+      } catch (err) {
+        console.error(err);
+        alert("Error calculating footprint: " + err.message);
+      }
     });
   });
 })();
