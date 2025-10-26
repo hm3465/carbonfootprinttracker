@@ -3,37 +3,55 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Why Carbon Footprint Matters</title>
+  <title>Why Your Carbon Footprint Matters</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-
-<!-- Top Tabs -->
-<div class="top-tabs">
-  <a href="index.html">Home</a>
-  <a href="how.html">How</a>
-</div>
-
-<!-- Main Title -->
-<h1 class="main-title">Why Your Carbon Footprint Matters</h1>
-
-<!-- Content Box -->
-<main>
-  <div class="home intro">
-    <p>
-      Every action we take, from driving a car to using electricity at home, produces CO₂ emissions that contribute to climate change.
-    </p>
-    <p>
-      By tracking your carbon footprint, you can understand the impact of your daily activities and make better choices to reduce emissions.
-    </p>
-    <p>
-      Small steps, like using public transport or switching to renewable energy, can collectively make a big difference.
-    </p>
+<header>
+  <div class="nav-container">
+    <h1 class="logo">Carbon Footprint Tracker</h1>
+    <nav>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="how.html">How</a></li>
+        <li><a href="tracker.html">Start</a></li>
+      </ul>
+    </nav>
   </div>
+</header>
+
+<main class="home" style="padding-top:1rem; display:flex; justify-content:center; align-items:center;">
+  <section class="intro" style="max-width:900px; text-align:center;">
+    <h2>Why Your Carbon Footprint Matters</h2>
+
+    <div style="display:grid; gap:1rem; margin:1.25rem 0;">
+      <div class="summary-card" style="margin:0 auto;">
+        <p>
+          Every action we take, from driving a car to using electricity at home, produces CO₂ emissions that contribute to climate change.
+        </p>
+      </div>
+
+      <div class="summary-card" style="margin:0 auto;">
+        <p>
+          By tracking your carbon footprint, you can understand the impact of your daily activities and make better choices to reduce emissions.
+        </p>
+      </div>
+
+      <div class="summary-card" style="margin:0 auto;">
+        <p>
+          Small steps, like using public transport or switching to renewable energy, can collectively make a big difference.
+        </p>
+      </div>
+    </div>
+
+    <div style="margin-top:1rem;">
+      <button class="btn start-btn" onclick="window.location.href='tracker.html'">Start Tracking →</button>
+    </div>
+  </section>
 </main>
 
-<script>
-</script>
-
+<footer>
+  <p>Hackathon 2025</p>
+</footer>
 </body>
 </html>

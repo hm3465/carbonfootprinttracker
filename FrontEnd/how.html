@@ -7,37 +7,61 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+<header>
+  <div class="nav-container">
+    <h1 class="logo">Carbon Footprint Tracker</h1>
+    <nav>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="why.html">Why</a></li>
+        <li><a href="tracker.html">Start</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
 
-<!-- Top Tabs -->
-<div class="top-tabs">
-  <a href="why.html">Why</a>
-  <a href="index.html">Home</a>
-</div>
-
-<!-- Main Title -->
-<h1 class="main-title">How to Reduce Your Carbon Footprint</h1>
-
-<!-- Content Box -->
-<main>
-  <div class="home intro">
-    <p>
+<main class="home" style="padding-top:1rem; display:flex; justify-content:center; align-items:center;">
+  <section class="intro" style="max-width:900px; text-align:center;">
+    <h2>How to Reduce Your Carbon Footprint</h2>
+    <p style="margin-top:.75rem">
       Reducing your carbon footprint can be simple if you focus on the areas where you consume the most energy.
     </p>
-    <ul>
-      <li><strong>Transportation:</strong> Walk, bike, carpool, or use public transit whenever possible.</li>
-      <li><strong>Energy:</strong> Switch to energy-efficient appliances and consider renewable electricity sources.</li>
-      <li><strong>Diet:</strong> Eating more plant-based meals and reducing meat consumption lowers emissions.</li>
-    </ul>
+
+    <div style="display:grid; gap:1rem; margin:1.25rem 0;">
+      <div class="summary-card" style="margin:0 auto;">
+        <h3 style="margin-bottom:.5rem;">Transportation</h3>
+        <ul style="margin-left:0; list-style:none; padding:0; line-height:1.6;">
+          <li><strong>Walk, bike, carpool, or use public transit</strong> whenever possible.</li>
+        </ul>
+      </div>
+
+      <div class="summary-card" style="margin:0 auto;">
+        <h3 style="margin-bottom:.5rem;">Energy</h3>
+        <ul style="margin-left:0; list-style:none; padding:0; line-height:1.6;">
+          <li><strong>Switch to energy-efficient appliances</strong> and consider renewable electricity sources.</li>
+        </ul>
+      </div>
+
+      <div class="summary-card" style="margin:0 auto;">
+        <h3 style="margin-bottom:.5rem;">Diet</h3>
+        <ul style="margin-left:0; list-style:none; padding:0; line-height:1.6;">
+          <li><strong>Eat more plant-based meals</strong> and reduce meat consumption to lower emissions.</li>
+        </ul>
+      </div>
+    </div>
+
     <p>
       Tracking your daily activities with our carbon footprint tracker helps you identify areas for improvement and measure your progress.
     </p>
-  </div>
+
+    <div style="margin-top:1rem;">
+      <button class="btn start-btn" onclick="window.location.href='tracker.html'">Track Your Impact →</button>
+    </div>
+  </section>
 </main>
 
-<script>
-  // Optional: add interactivity later
-</script>
-
+<footer>
+  <p>Hackathon 2025</p>
+</footer>
 </body>
 </html>
-
