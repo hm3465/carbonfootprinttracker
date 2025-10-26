@@ -22,7 +22,6 @@
 <main>
   <div class="quiz-container" style="max-width: 900px;">
     <h2 style="margin-bottom:1rem;">Summary</h2>
-
     <div class="summary-card" style="margin-bottom:1.25rem;">
       <div class="total">Total: <span id="totalOut">0.00 kg</span></div>
       <ul>
@@ -54,6 +53,88 @@
   <p>Hackathon 2025</p>
 </footer>
 
-<script src="summary.js" defer></script>
+<script>
+(function () {
+  document.addEventListener("DOMContentLoaded", function(){
+    var raw = sessionStorage.getItem("footprintResult");
+    if (!raw) { window.location.replace("tracker.html"); return; }
+    var data = JSON.parse(raw);
+    var totals = data.totals || {};
+    var details = data.details || {};
+
+    document.getElementById("totalOut").textContent  = (totals.totalKg || 0).toFixed ? totals.totalKg.toFixed(2) + " kg" : "0.00 kg";
+    document.getElementById("travelOut").textContent = (totals.travelKg || 0).toFixed ? totals.travelKg.toFixed(2) + " kg" : "0.00 kg";
+    document.getElementById("elecOut").textContent   = (totals.elecKg || 0).toFixed ? totals.elecKg.toFixed(2) + " kg" : "0.00 kg";
+    document.getElementById("expOut").textContent    = (totals.expKg || 0).toFixed ? totals.expKg.toFixed(2) + " kg" : "0.00 kg";
+
+    var tipOut = document.getElementById("tipOut");
+    var total = totals.totalKg || 0;
+    tipOut.textContent = total > 20 ? "Big day. Consider combining trips and dialing back high-impact purchases."
+                     : total > 10 ? "Nice work. Try a car-free errand or lowering A/C a notch."
+                     : "Great job! Keep up the low-impact habits.";
+
+    // Trips
+    var tripsDiv = document.getElementById("tripsTable");
+    var trips = details.trips || [];
+    if (trips.length) {
+      var rows = "";
+      for (var i=0;i<trips.length;i++){
+        var t = trips[i];
+        rows += "<tr>"
+          + "<td>" + (t.mode || "-") + "</td>"
+          + "<td>" + (t.origin || "-") + "</td>"
+          + "<td>" + (t.dest || "-") + "</td>"
+          + '<td style="text-align:right">' + (t.distKm != null ? Number(t.distKm).toFixed(1) : "0.0") + " km</td>"
+          + '<td style="text-align:right">' + (t.kg != null ? Number(t.kg).toFixed(2) : "0.00") + " kg</td>"
+          + "</tr>";
+      }
+      tripsDiv.innerHTML =
+        '<div style="overflow-x:auto;">'
+        + '<table style="width:100%; border-collapse:collapse;">'
+        + '<thead><tr>'
+        + '<th style="text-align:left">Mode</th>'
+        + '<th style="text-align:left">Origin</th>'
+        + '<th style="text-align:left">Destination</th>'
+        + '<th style="text-align:right">Distance</th>'
+        + '<th style="text-align:right">Emissions</th>'
+        + '</tr></thead>'
+        + '<tbody>' + rows + '</tbody>'
+        + '</table></div>';
+    }
+
+    // Electricity
+    var el = details.electricity || {};
+    document.getElementById("elecDetail").textContent =
+      el.kwh ? (el.kwh + " kWh • grid=" + String(el.gridCountry || "us").toUpperCase()) : "—";
+
+    // Expenses
+    var expDiv = document.getElementById("expTable");
+    var exps = details.expenses || [];
+    if (exps.length) {
+      var rows2 = "";
+      for (var j=0;j<exps.length;j++){
+        var e = exps[j];
+        rows2 += "<tr>"
+          + "<td>" + (e.cat || "-") + "</td>"
+          + "<td>" + (e.desc || "-") + "</td>"
+          + '<td style="text-align:right">$ ' + (e.amt != null ? Number(e.amt).toFixed(2) : "0.00") + "</td>"
+          + '<td style="text-align:right">' + (e.kg != null ? Number(e.kg).toFixed(2) : "0.00") + " kg</td>"
+          + "</tr>";
+      }
+      expDiv.innerHTML =
+        '<div style="overflow-x:auto;">'
+        + '<table style="width:100%; border-collapse:collapse;">'
+        + '<thead><tr>'
+        + '<th style="text-align:left">Category</th>'
+        + '<th style="text-align:left">Description</th>'
+        + '<th style="text-align:right">Amount</th>'
+        + '<th style="text-align:right">Emissions</th>'
+        + '</tr></thead>'
+        + '<tbody>' + rows2 + '</tbody>'
+        + '</table></div>';
+    }
+  });
+})();
+</script>
 </body>
 </html>
