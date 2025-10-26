@@ -121,13 +121,8 @@ main {
   animation: fadeIn 0.6s ease;
 }
 
-.quiz-step {
-  display: none;
-}
-
-.quiz-step.active {
-  display: block;
-}
+.quiz-step { display: none; }
+.quiz-step.active { display: block; }
 
 .quiz-step h2 {
   color: white;
@@ -140,9 +135,7 @@ main {
   color: rgba(255, 255, 255, 0.9);
 }
 
-.form-group {
-  margin-bottom: 1.5rem;
-}
+.form-group { margin-bottom: 1.5rem; }
 
 label {
   display: block;
@@ -152,29 +145,29 @@ label {
 }
 
 input[type="number"],
+input[type="text"],
 select {
   width: 100%;
-  padding: 0.7rem;
+  padding: 0.9rem 1rem;
   border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 1rem;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.12);
   color: white;
 }
 
 input::placeholder {
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.75);
 }
 
 input:focus,
 select:focus {
   border-color: white;
   outline: none;
+  box-shadow: 0 0 0 2px rgba(255,255,255,.25);
 }
 
-option {
-  color: black; /* ensures dropdown readability */
-}
+option { color: black; }
 
 .hint {
   font-size: 0.85rem;
@@ -196,10 +189,7 @@ option {
   cursor: pointer;
   text-decoration: underline;
 }
-
-.link-reset:hover {
-  opacity: 0.8;
-}
+.link-reset:hover { opacity: 0.8; }
 
 /* ---------- Summary Card ---------- */
 .summary-card {
@@ -215,10 +205,7 @@ option {
   color: white;
 }
 
-.summary-card .total {
-  font-size: 1.3rem;
-  margin-bottom: 1rem;
-}
+.summary-card .total { font-size: 1.3rem; margin-bottom: 1rem; }
 
 .summary-card ul {
   list-style: none;
@@ -226,16 +213,8 @@ option {
   margin-bottom: 1.5rem;
 }
 
-.summary-card li {
-  font-size: 1rem;
-  margin: 0.5rem 0;
-}
-
-.summary-card .tip {
-  font-weight: 600;
-  color: white;
-  margin-top: 1rem;
-}
+.summary-card li { font-size: 1rem; margin: 0.5rem 0; }
+.summary-card .tip { font-weight: 600; color: white; margin-top: 1rem; }
 
 /* ---------- Footer ---------- */
 footer {
@@ -249,33 +228,18 @@ footer {
 
 /* ---------- Animations ---------- */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 700px) {
-  .nav-container {
-    flex-direction: column;
-    gap: 0.8rem;
-  }
-
-  .intro {
-    padding: 2rem 1.5rem;
-  }
-
-  .quiz-container {
-    padding: 1.5rem;
-  }
+  .nav-container { flex-direction: column; gap: 0.8rem; }
+  .intro { padding: 2rem 1.5rem; }
+  .quiz-container { padding: 1.5rem; }
 }
 
-/* ---- Added for tracker rows ---- */
+/* ---- Your previous tracker row cosmetics ---- */
 .trip-row select, .trip-row input,
 .expense-row select, .expense-row input {
   padding: 0.55rem;
@@ -285,4 +249,39 @@ footer {
   border: 1px solid rgba(255,255,255,0.25);
   border-radius: 10px;
   padding: .6rem;
+}
+
+/* ===== 🔧 Minimal patch (scoped to rows) ===== */
+.trip-row {
+  display: grid;
+  grid-template-columns: 1fr 180px 110px; /* mode | distance | remove */
+  gap: .75rem;
+  align-items: center;
+}
+
+.expense-row {
+  display: grid;
+  grid-template-columns: 2.2fr 1.4fr 180px 110px; /* description | category | amount | remove */
+  gap: .75rem;
+  align-items: center;
+}
+
+/* Make remove buttons fit their own cell */
+.trip-row .remove-trip,
+.expense-row .remove-expense {
+  width: 100%;
+  text-align: center;
+  padding: .6rem .8rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.4);
+  background: rgba(255,255,255,.18);
+}
+
+/* Stack nicely on small screens */
+@media (max-width: 700px) {
+  .trip-row { grid-template-columns: 1fr 1fr; }
+  .trip-row .remove-trip { grid-column: 1 / -1; }
+  .expense-row { grid-template-columns: 1fr 1fr; }
+  .expense-row .expense-amt,
+  .expense-row .remove-expense { grid-column: 1 / -1; }
 }

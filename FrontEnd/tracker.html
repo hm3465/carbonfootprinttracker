@@ -34,10 +34,8 @@
       </p>
     </section>
 
-    <hr style="margin:1.5rem 0; border:none; border-top:1px solid rgba(255,255,255,.3)"/>
-
     <!-- ELECTRICITY -->
-    <section>
+    <section style="margin-top:2rem;">
       <h3 style="margin:.5rem 0 1rem;">Electricity</h3>
       <div class="form-group">
         <label for="kwh">kWh used today</label>
@@ -50,10 +48,8 @@
       </div>
     </section>
 
-    <hr style="margin:1.5rem 0; border:none; border-top:1px solid rgba(255,255,255,.3)"/>
-
     <!-- EXPENSES -->
-    <section>
+    <section style="margin-top:2rem;">
       <h3 style="margin:.5rem 0 1rem;">Expenses (add purchases)</h3>
       <div id="expenseList"></div>
       <button id="addExpenseBtn" class="btn" type="button" style="margin-top:.75rem;">+ Add Expense</button>
@@ -65,19 +61,6 @@
     <div class="quiz-actions" style="justify-content:flex-end; margin-top:2rem;">
       <button id="calcBtn" class="btn" type="button">Calculate Footprint</button>
     </div>
-
-    <!-- PREVIEW -->
-    <section style="margin-top:2rem;">
-      <div class="summary-card">
-        <div class="total">Total: <span id="totalOut">0.00 kg</span></div>
-        <ul>
-          <li>Travel: <span id="travelOut">0.00 kg</span></li>
-          <li>Electricity: <span id="elecOut">0.00 kg</span></li>
-          <li>Expenses: <span id="expOut">0.00 kg</span></li>
-        </ul>
-        <div class="tip" id="tipOut">Enter your data and hit Calculate.</div>
-      </div>
-    </section>
   </div>
 </main>
 
@@ -88,16 +71,17 @@
 <script>
 (function () {
   const API_BASE = "http://localhost:3000";
-  function $(id){ return document.getElementById(id); }
-  function numberOrZero(v){ const n = Number(v); return isFinite(n) && n > 0 ? n : 0; }
+  const $ = (id) => document.getElementById(id);
+  const numberOrZero = (v) => { const n = Number(v); return isFinite(n) && n > 0 ? n : 0; };
 
-  // Factors (fallbacks if API unavailable)
+  // Fallback factors if API fails
   const LOCAL_TRAVEL_FACTORS_KG_PER_KM = { air: 0.15, rail: 0.041, car: 0.21 };
   const EXPENSE_FACTORS_KG_PER_USD = { groceries: 0.06, apparel: 0.09, electronics: 0.16, dining: 0.10, other: 0.07 };
 
+  /* ---------- Row Templates ---------- */
   function tripRowTemplate(i) {
     return `
-      <div class="trip-row" data-idx="${i}" style="margin-bottom:.75rem;display:grid;gap:.5rem;grid-template-columns:1fr 140px 100px;">
+      <div class="trip-row" data-idx="${i}">
         <select class="trip-mode">
           <option value="car">Car</option>
           <option value="air">Air</option>
@@ -109,10 +93,11 @@
     `;
   }
 
+  /* Expense row now has 4 separate columns: desc | category | amount | remove */
   function expenseRowTemplate(i) {
     return `
-      <div class="expense-row" data-idx="${i}" style="margin-bottom:.75rem;display:grid;gap:.5rem;grid-template-columns:2fr 1fr 100px;">
-        <input class="expense-desc" placeholder="Description (optional)"/>
+      <div class="expense-row" data-idx="${i}">
+        <input class="expense-desc" type="text" placeholder="Description (optional)"/>
         <select class="expense-cat">
           <option value="groceries">Groceries</option>
           <option value="apparel">Apparel</option>
@@ -120,10 +105,8 @@
           <option value="dining">Dining</option>
           <option value="other">Other</option>
         </select>
-        <div style="display:flex; gap:.5rem;">
-          <input class="expense-amt" type="number" min="0" step="0.01" placeholder="$"/>
-          <button class="link-reset remove-expense" type="button">Remove</button>
-        </div>
+        <input class="expense-amt" type="number" min="0" step="0.01" placeholder="$ amount"/>
+        <button class="link-reset remove-expense" type="button">Remove</button>
       </div>
     `;
   }
@@ -142,19 +125,21 @@
     const tripList = $("tripList");
     const expenseList = $("expenseList");
 
+    // Seed default rows
     tripList.insertAdjacentHTML("beforeend", tripRowTemplate(0));
     expenseList.insertAdjacentHTML("beforeend", expenseRowTemplate(0));
 
+    // Add buttons
     $("addTripBtn").addEventListener("click", () => {
       const i = tripList.querySelectorAll(".trip-row").length;
       tripList.insertAdjacentHTML("beforeend", tripRowTemplate(i));
     });
-
     $("addExpenseBtn").addEventListener("click", () => {
       const i = expenseList.querySelectorAll(".expense-row").length;
       expenseList.insertAdjacentHTML("beforeend", expenseRowTemplate(i));
     });
 
+    // Remove buttons (delegated)
     tripList.addEventListener("click", (e) => {
       if (e.target.classList.contains("remove-trip")) e.target.closest(".trip-row")?.remove();
     });
@@ -162,6 +147,7 @@
       if (e.target.classList.contains("remove-expense")) e.target.closest(".expense-row")?.remove();
     });
 
+    // Calculate
     $("calcBtn").addEventListener("click", async () => {
       const tripRows = [...document.querySelectorAll(".trip-row")];
       const expenseRows = [...document.querySelectorAll(".expense-row")];
@@ -174,17 +160,13 @@
 
       try {
         const ping = await fetch(`${API_BASE}/health`).then(r => r.ok ? r.json() : null).catch(() => null);
-        if (!ping) {
-          alert("Cannot reach server at " + API_BASE);
-          return;
-        }
+        if (!ping) { alert("Cannot reach server at " + API_BASE); return; }
 
-        // --- Travel ---
+        // Travel
         for (const row of tripRows) {
           const mode = row.querySelector(".trip-mode").value;
           const distKm = numberOrZero(row.querySelector(".trip-dist").value);
           if (distKm <= 0) continue;
-
           let kg = 0;
           try {
             const j = await postJSON(`${API_BASE}/api/vehicle`, {
@@ -200,7 +182,7 @@
           tripsSnapshot.push({ mode, distKm, kg: +kg.toFixed(3) });
         }
 
-        // --- Electricity ---
+        // Electricity
         if (kwh > 0) {
           try {
             const j = await postJSON(`${API_BASE}/api/electricity`, {
@@ -214,13 +196,13 @@
           }
         }
 
-        // --- Expenses ---
+        // Expenses
         for (const row of expenseRows) {
           const cat = row.querySelector(".expense-cat").value;
           const desc = row.querySelector(".expense-desc").value.trim();
           const amt = numberOrZero(row.querySelector(".expense-amt").value);
           if (amt <= 0) continue;
-          const perDollar = EXPENSE_FACTORS_KG_PER_USD[cat] ?? EXPENSE_FACTORS_KG_PER_USD.other;
+          const perDollar = ({"groceries":0.06,"apparel":0.09,"electronics":0.16,"dining":0.10,"other":0.07})[cat] ?? 0.07;
           const kg = amt * perDollar;
           expKg += kg;
           expensesSnapshot.push({ cat, desc, amt, kg: +kg.toFixed(3) });
@@ -228,15 +210,7 @@
 
         const totalKg = travelKg + elecKg + expKg;
 
-        $("travelOut").textContent = `${travelKg.toFixed(2)} kg`;
-        $("elecOut").textContent   = `${elecKg.toFixed(2)} kg`;
-        $("expOut").textContent    = `${expKg.toFixed(2)} kg`;
-        $("totalOut").textContent  = `${totalKg.toFixed(2)} kg`;
-        $("tipOut").textContent =
-          totalKg > 20 ? "Big day. Consider combining trips and dialing back high-impact purchases."
-          : totalKg > 10 ? "Nice work. Try a car-free errand or lowering A/C a notch."
-          : "Great job! Keep up the low-impact habits.";
-
+        // Persist to summary and navigate
         const summary = {
           totals: {
             travelKg: +travelKg.toFixed(3),
@@ -251,7 +225,6 @@
           },
           ts: Date.now()
         };
-
         sessionStorage.setItem("footprintResult", JSON.stringify(summary));
         window.location.href = "summary.html";
 
