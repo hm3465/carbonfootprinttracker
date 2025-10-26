@@ -82,8 +82,6 @@
         var t = trips[i];
         rows += "<tr>"
           + "<td>" + (t.mode || "-") + "</td>"
-          + "<td>" + (t.origin || "-") + "</td>"
-          + "<td>" + (t.dest || "-") + "</td>"
           + '<td style="text-align:right">' + (t.distKm != null ? Number(t.distKm).toFixed(1) : "0.0") + " km</td>"
           + '<td style="text-align:right">' + (t.kg != null ? Number(t.kg).toFixed(2) : "0.00") + " kg</td>"
           + "</tr>";
@@ -93,8 +91,6 @@
         + '<table style="width:100%; border-collapse:collapse;">'
         + '<thead><tr>'
         + '<th style="text-align:left">Mode</th>'
-        + '<th style="text-align:left">Origin</th>'
-        + '<th style="text-align:left">Destination</th>'
         + '<th style="text-align:right">Distance</th>'
         + '<th style="text-align:right">Emissions</th>'
         + '</tr></thead>'
